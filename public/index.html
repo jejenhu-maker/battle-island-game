@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>Battle Island</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  overflow: hidden; 
+  background: #000; 
+  font-family: 'Courier New', monospace;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+canvas { display: block; }
+
+#ui-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#hud {
+  position: absolute;
+  top: 15px; left: 15px; right: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  color: #0f0;
+  font-size: 14px;
+  text-shadow: 0 0 6px #0f0;
+}
+
+#hp-bar-container {
+  width: 120px;
+  height: 12px;
+  border: 2px solid #0f0;
+  background: rgba(0,0,0,0.5);
+}
+#hp-bar {
+  width: 100%;
+  height: 100%;
+  background: #0f0;
+  transition: width 0.3s;
+}
+
+#fire-btn {
+  position: absolute;
+  bottom: 40px;
+  right: 30px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,60,60,0.9), rgba(200,0,0,0.7));
+  border: 3px solid rgba(255,100,100,0.8);
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  text-shadow: 0 0 4px #fff;
+  box-shadow: 0 0 20px rgba(255,0,0,0.5);
+}
+#fire-btn:active {
+  background: radial-gradient(circle, rgba(255,120,120,1), rgba(255,40,40,0.9));
+  transform: scale(0.92);
+}
+
+#title-screen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, #0a0a2e 0%, #1a0a3e 50%, #0a1a2e 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  color: #fff;
+}
+#title-screen h1 {
+  font-size: 42px;
+  color: #ff6600;
+  text-shadow: 0 0 20px #ff6600, 0 0 40px #ff3300;
+  margin-bottom: 10px;
+  letter-spacing: 4px;
+}
+#title-screen .subtitle {
+  font-size: 14px;
+  color: #88aaff;
+  margin-bottom: 50px;
+  letter-spacing: 2px;
+}
+#start-btn {
+  padding: 15px 50px;
+  font-size: 20px;
+  font-family: 'Courier New', monospace;
+  background: transparent;
+  border: 2px solid #ff6600;
+  color: #ff6600;
+  cursor: pointer;
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px #ff6600;
+  pointer-events: auto;
+  animation: pulse 2s infinite;
+}
+#start-btn:active { transform: scale(0.95); }
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(255,102,0,0.3); }
+  50% { box-shadow: 0 0 25px rgba(255,102,0,0.6); }
+}
+
+#intro-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  color: #fff;
+}
+#intro-text {
+  font-size: 24px;
+  color: #ff6600;
+  text-shadow: 0 0 15px #ff6600;
+  letter-spacing: 3px;
+  animation: fadeInOut 3s forwards;
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(20px); }
+  20% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+#game-over-screen, #level-clear-screen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+  color: #fff;
+}
+#game-over-screen h2 { color: #ff3333; font-size: 36px; text-shadow: 0 0 20px #ff0000; margin-bottom: 15px; }
+#level-clear-screen h2 { color: #33ff33; font-size: 36px; text-shadow: 0 0 20px #00ff00; margin-bottom: 15px; }
+.screen-btn {
+  margin-top: 25px;
+  padding: 12px 40px;
+  font-size: 16px;
+  font-family: 'Courier New', monospace;
+  background: transparent;
+  border: 2px solid #fff;
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+  letter-spacing: 2px;
+}
+.info-text { font-size: 14px; color: #aaa; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div id="title-screen">
+  <h1>BATTLE ISLAND</h1>
+  <div class="subtitle">VOXEL AIR COMBAT</div>
+  <button id="start-btn">START GAME</button>
+</div>
+
+<div id="intro-overlay">
+  <div id="intro-text">APPROACHING BATTLE ISLAND...</div>
+</div>
+
+<div id="game-over-screen">
+  <h2>DESTROYED</h2>
+  <div class="info-text" id="go-reason"></div>
+  <button class="screen-btn" id="retry-btn">RETRY</button>
+</div>
+
+<div id="level-clear-screen">
+  <h2>LEVEL CLEAR!</h2>
+  <div class="info-text" id="clear-info"></div>
+  <button class="screen-btn" id="next-btn">NEXT LEVEL</button>
+</div>
+
+<div id="ui-overlay">
+  <div id="hud" style="display:none;">
+    <div>
+      <div>LEVEL <span id="hud-level">1</span></div>
+      <div>SCORE <span id="hud-score">0</span></div>
+      <div style="margin-top:4px;">
+        <div id="hp-bar-container"><div id="hp-bar"></div></div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div>ENEMIES <span id="hud-enemies">1</span></div>
+      <div>★ <span id="hud-stars">0</span></div>
+    </div>
+  </div>
+  <div id="fire-btn" style="display:none;">FIRE</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ─── Game State ───
+const state = {
+  phase: 'title', // title, intro, playing, gameover, levelclear
+  level: 1,
+  score: 0,
+  stars: 0,
+  hp: 3,
+  maxHp: 3,
+  enemyCount: 1,
+  bulletLevel: 1,
+  playerSpeed: 0.15,
+  playerX: 0,
+  playerTargetX: 0,
+  playerY: 8,
+  playerZ: 0,
+  enemies: [],
+  playerBullets: [],
+  enemyBullets: [],
+  starItems: [],
+  explosions: [],
+  mountains: [],
+  clouds: [],
+  groundTiles: [],
+  scrollSpeed: 0.3,
+  fireRate: 300,
+  lastFire: 0,
+  isFiring: false,
+  touchStartX: null,
+  introTimer: 0,
+  goalPost: null,
+  goalActive: false,
+  landingPhase: false,
+  landingTimer: 0,
+};
+
+// ─── Three.js Setup ───
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x4488cc);
+scene.fog = new THREE.Fog(0x4488cc, 50, 120);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 18, 18);
+camera.lookAt(0, 5, -10);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+// Lights
+const ambientLight = new THREE.AmbientLight(0x6688aa, 0.6);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+dirLight.position.set(10, 20, 10);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+// ─── Voxel Helpers ───
+function createVoxelBox(w, h, d, color) {
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const mat = new THREE.MeshLambertMaterial({ color });
+  return new THREE.Mesh(geo, mat);
+}
+
+function createPlayerPlane() {
+  const group = new THREE.Group();
+  // Body
+  const body = createVoxelBox(1.2, 0.5, 2.5, 0x2288ff);
+  group.add(body);
+  // Wings
+  const wingL = createVoxelBox(3, 0.15, 1, 0x1166dd);
+  wingL.position.set(-1.2, 0, 0.2);
+  group.add(wingL);
+  const wingR = createVoxelBox(3, 0.15, 1, 0x1166dd);
+  wingR.position.set(1.2, 0, 0.2);
+  group.add(wingR);
+  // Tail
+  const tail = createVoxelBox(0.8, 0.8, 0.5, 0x0044aa);
+  tail.position.set(0, 0.4, 1.2);
+  group.add(tail);
+  // Cockpit
+  const cockpit = createVoxelBox(0.6, 0.4, 0.6, 0x88ddff);
+  cockpit.position.set(0, 0.35, -0.3);
+  group.add(cockpit);
+  // Engine glow
+  const engine = createVoxelBox(0.4, 0.3, 0.3, 0xff6600);
+  engine.position.set(0, 0, 1.4);
+  group.add(engine);
+  return group;
+}
+
+function createEnemyPlane() {
+  const group = new THREE.Group();
+  const body = createVoxelBox(1.2, 0.5, 2.2, 0xff2222);
+  group.add(body);
+  const wingL = createVoxelBox(2.5, 0.15, 0.9, 0xcc1111);
+  wingL.position.set(-1, 0, 0.2);
+  group.add(wingL);
+  const wingR = createVoxelBox(2.5, 0.15, 0.9, 0xcc1111);
+  wingR.position.set(1, 0, 0.2);
+  group.add(wingR);
+  const tail = createVoxelBox(0.7, 0.7, 0.5, 0x990000);
+  tail.position.set(0, 0.35, 1.1);
+  group.add(tail);
+  const cockpit = createVoxelBox(0.5, 0.35, 0.5, 0xff8888);
+  cockpit.position.set(0, 0.3, -0.2);
+  group.add(cockpit);
+  return group;
+}
+
+function createBullet(color, size = 0.15) {
+  const geo = new THREE.BoxGeometry(size, size, size * 3);
+  const mat = new THREE.MeshBasicMaterial({ color, emissive: color });
+  return new THREE.Mesh(geo, mat);
+}
+
+function createStar() {
+  const group = new THREE.Group();
+  // Ring
+  const ringGeo = new THREE.TorusGeometry(1.2, 0.12, 6, 12);
+  const ringMat = new THREE.MeshLambertMaterial({ color: 0xffcc00 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  group.add(ring);
+  // Star center
+  const starGeo = new THREE.OctahedronGeometry(0.5, 0);
+  const starMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  const star = new THREE.Mesh(starGeo, starMat);
+  group.add(star);
+  return group;
+}
+
+function createMountain(x, z, scale) {
+  const group = new THREE.Group();
+  const colors = [0x336633, 0x2d5a2d, 0x3d7a3d, 0x445544];
+  const c = colors[Math.floor(Math.random() * colors.length)];
+  // Blocky mountain - stack of boxes
+  const layers = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < layers; i++) {
+    const s = (layers - i) * scale * 1.5;
+    const h = scale * 1.2;
+    const box = createVoxelBox(s, h, s, c);
+    box.position.set(0, i * h, 0);
+    group.add(box);
+  }
+  group.position.set(x, -2, z);
+  return group;
+}
+
+function createExplosion(pos) {
+  const group = new THREE.Group();
+  const count = 8;
+  const particles = [];
+  for (let i = 0; i < count; i++) {
+    const size = 0.2 + Math.random() * 0.4;
+    const colors = [0xff4400, 0xff8800, 0xffcc00, 0xff0000];
+    const box = createVoxelBox(size, size, size, colors[Math.floor(Math.random() * colors.length)]);
+    box.position.copy(pos);
+    const vel = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.4,
+      Math.random() * 0.3,
+      (Math.random() - 0.5) * 0.4
+    );
+    scene.add(box);
+    particles.push({ mesh: box, vel, life: 1.0 });
+  }
+  return particles;
+}
+
+// ─── Ground ───
+function createGround() {
+  // Water/ground plane
+  const groundGeo = new THREE.PlaneGeometry(100, 200);
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x225588 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -3;
+  scene.add(ground);
+
+  // Island
+  const islandGeo = new THREE.BoxGeometry(30, 2, 40);
+  const islandMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
+  const island = new THREE.Mesh(islandGeo, islandMat);
+  island.position.set(0, -2.5, -20);
+  scene.add(island);
+
+  // Add mountains
+  for (let i = 0; i < 12; i++) {
+    const x = (Math.random() - 0.5) * 40;
+    const z = -60 - Math.random() * 40;
+    const s = 0.5 + Math.random() * 1.5;
+    const mt = createMountain(x, z, s);
+    scene.add(mt);
+    state.mountains.push(mt);
+  }
+  // Side mountains
+  for (let i = 0; i < 8; i++) {
+    const side = i < 4 ? -1 : 1;
+    const x = side * (18 + Math.random() * 15);
+    const z = -20 + (Math.random() - 0.5) * 60;
+    const s = 0.8 + Math.random() * 1.5;
+    const mt = createMountain(x, z, s);
+    scene.add(mt);
+    state.mountains.push(mt);
+  }
+
+  // Clouds
+  for (let i = 0; i < 15; i++) {
+    const cloud = createVoxelBox(
+      2 + Math.random() * 4,
+      0.8 + Math.random() * 1,
+      2 + Math.random() * 3,
+      0xffffff
+    );
+    cloud.material.transparent = true;
+    cloud.material.opacity = 0.7;
+    cloud.position.set(
+      (Math.random() - 0.5) * 60,
+      15 + Math.random() * 10,
+      -50 + Math.random() * 80
+    );
+    scene.add(cloud);
+    state.clouds.push(cloud);
+  }
+}
+
+// ─── Spawn Enemies ───
+function spawnEnemies() {
+  state.enemies.forEach(e => scene.remove(e.mesh));
+  state.enemies = [];
+  
+  const count = state.enemyCount;
+  for (let i = 0; i < count; i++) {
+    const mesh = createEnemyPlane();
+    const x = (Math.random() - 0.5) * 20;
+    const z = -30 - Math.random() * 20;
+    const y = 6 + Math.random() * 6;
+    mesh.position.set(x, y, z);
+    scene.add(mesh);
+    state.enemies.push({
+      mesh,
+      hp: 3,
+      lastFire: 0,
+      fireRate: 1500 - state.level * 100,
+      moveTimer: Math.random() * Math.PI * 2,
+      moveSpeed: 0.02 + state.level * 0.005,
+      baseX: x,
+      baseZ: z,
+    });
+  }
+  updateHUD();
+}
+
+// ─── Spawn Stars ───
+function spawnStars() {
+  state.starItems.forEach(s => scene.remove(s.mesh));
+  state.starItems = [];
+
+  const count = 2 + state.level;
+  for (let i = 0; i < count; i++) {
+    const mesh = createStar();
+    mesh.position.set(
+      (Math.random() - 0.5) * 24,
+      5 + Math.random() * 8,
+      -15 - Math.random() * 40
+    );
+    scene.add(mesh);
+    state.starItems.push({ mesh, collected: false });
+  }
+}
+
+// ─── Goal Post ───
+function spawnGoal() {
+  if (state.goalPost) scene.remove(state.goalPost);
+  const group = new THREE.Group();
+  // Archway
+  const pillarL = createVoxelBox(0.5, 6, 0.5, 0xffcc00);
+  pillarL.position.set(-5, 3, 0);
+  group.add(pillarL);
+  const pillarR = createVoxelBox(0.5, 6, 0.5, 0xffcc00);
+  pillarR.position.set(5, 3, 0);
+  group.add(pillarR);
+  const top = createVoxelBox(10.5, 0.8, 0.5, 0xffcc00);
+  top.position.set(0, 6.2, 0);
+  group.add(top);
+  // Banner
+  const banner = createVoxelBox(9, 2, 0.1, 0x00ff00);
+  banner.material.transparent = true;
+  banner.material.opacity = 0.5;
+  banner.position.set(0, 4, 0);
+  group.add(banner);
+
+  group.position.set(0, 5, -55);
+  group.visible = false;
+  scene.add(group);
+  state.goalPost = group;
+  state.goalActive = false;
+}
+
+// ─── Player ───
+let playerMesh;
+function initPlayer() {
+  if (playerMesh) scene.remove(playerMesh);
+  playerMesh = createPlayerPlane();
+  playerMesh.position.set(0, state.playerY, 0);
+  scene.add(playerMesh);
+  state.playerX = 0;
+  state.playerTargetX = 0;
+  state.hp = state.maxHp;
+}
+
+// ─── Fire Player Bullets ───
+function firePlayerBullet() {
+  const now = Date.now();
+  if (now - state.lastFire < state.fireRate) return;
+  state.lastFire = now;
+
+  const bulletCount = state.bulletLevel;
+  const spread = 0.8;
+
+  if (bulletCount === 1) {
+    const b = createBullet(0x00ffff);
+    b.position.set(playerMesh.position.x, playerMesh.position.y, playerMesh.position.z - 1.5);
+    scene.add(b);
+    state.playerBullets.push({ mesh: b, vel: new THREE.Vector3(0, 0, -1.2) });
+  } else if (bulletCount === 2) {
+    for (let i = -1; i <= 1; i += 2) {
+      const b = createBullet(0x00ffff);
+      b.position.set(playerMesh.position.x + i * 0.4, playerMesh.position.y, playerMesh.position.z - 1.5);
+      scene.add(b);
+      state.playerBullets.push({ mesh: b, vel: new THREE.Vector3(0, 0, -1.2) });
+    }
+  } else {
+    const angles = [];
+    for (let i = 0; i < bulletCount; i++) {
+      angles.push((i - (bulletCount - 1) / 2) * 0.15);
+    }
+    angles.forEach(a => {
+      const b = createBullet(0x00ffff, 0.15 + state.bulletLevel * 0.02);
+      b.position.set(playerMesh.position.x, playerMesh.position.y, playerMesh.position.z - 1.5);
+      scene.add(b);
+      state.playerBullets.push({ mesh: b, vel: new THREE.Vector3(Math.sin(a) * 0.3, 0, -1.2) });
+    });
+  }
+}
+
+// ─── Fire Enemy Bullets ───
+function fireEnemyBullet(enemy) {
+  const dir = new THREE.Vector3();
+  dir.subVectors(playerMesh.position, enemy.mesh.position).normalize();
+  const b = createBullet(0xff4444);
+  b.position.copy(enemy.mesh.position);
+  b.position.z += 1;
+  scene.add(b);
+  state.enemyBullets.push({ mesh: b, vel: dir.multiplyScalar(0.5 + state.level * 0.05) });
+}
+
+// ─── Collision Detection ───
+function checkCollision(a, b, dist) {
+  return a.distanceTo(b) < dist;
+}
+
+// ─── HUD ───
+function updateHUD() {
+  document.getElementById('hud-level').textContent = state.level;
+  document.getElementById('hud-score').textContent = state.score;
+  document.getElementById('hud-enemies').textContent = state.enemies.filter(e => e.hp > 0).length;
+  document.getElementById('hud-stars').textContent = state.stars;
+  document.getElementById('hp-bar').style.width = (state.hp / state.maxHp * 100) + '%';
+  if (state.hp <= 1) {
+    document.getElementById('hp-bar').style.background = '#ff3333';
+  } else {
+    document.getElementById('hp-bar').style.background = '#0f0';
+  }
+}
+
+// ─── Game Over ───
+function gameOver(reason) {
+  state.phase = 'gameover';
+  document.getElementById('go-reason').textContent = reason;
+  document.getElementById('game-over-screen').style.display = 'flex';
+  document.getElementById('fire-btn').style.display = 'none';
+}
+
+// ─── Level Clear ───
+function levelClear() {
+  state.phase = 'levelclear';
+  document.getElementById('clear-info').textContent = 
+    `Score: ${state.score} | Stars: ${state.stars} | Bullet Level: ${state.bulletLevel} → ${state.bulletLevel + 1}`;
+  document.getElementById('level-clear-screen').style.display = 'flex';
+  document.getElementById('fire-btn').style.display = 'none';
+}
+
+// ─── Start Level ───
+function startLevel() {
+  // Clear bullets
+  state.playerBullets.forEach(b => scene.remove(b.mesh));
+  state.enemyBullets.forEach(b => scene.remove(b.mesh));
+  state.playerBullets = [];
+  state.enemyBullets = [];
+  // Clear explosions
+  state.explosions.forEach(particles => {
+    particles.forEach(p => scene.remove(p.mesh));
+  });
+  state.explosions = [];
+
+  state.enemyCount = state.level;
+  state.hp = state.maxHp;
+  state.goalActive = false;
+  state.landingPhase = false;
+
+  initPlayer();
+  spawnEnemies();
+  spawnStars();
+  spawnGoal();
+
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('fire-btn').style.display = 'flex';
+  document.getElementById('game-over-screen').style.display = 'none';
+  document.getElementById('level-clear-screen').style.display = 'none';
+
+  state.phase = 'playing';
+  updateHUD();
+}
+
+// ─── Game Update ───
+function update() {
+  if (state.phase !== 'playing') return;
+
+  const now = Date.now();
+
+  // Player movement (smooth lerp)
+  state.playerX += (state.playerTargetX - state.playerX) * 0.08;
+  state.playerX = Math.max(-15, Math.min(15, state.playerX));
+  playerMesh.position.x = state.playerX;
+  playerMesh.position.y = state.playerY;
+  // Slight tilt when turning
+  playerMesh.rotation.z = -(state.playerTargetX - state.playerX) * 0.05;
+
+  // Auto fire if holding
+  if (state.isFiring) {
+    firePlayerBullet();
+  }
+
+  // ─ Enemy AI ─
+  state.enemies.forEach(enemy => {
+    if (enemy.hp <= 0) return;
+    enemy.moveTimer += enemy.moveSpeed;
+    // Weave pattern
+    enemy.mesh.position.x = enemy.baseX + Math.sin(enemy.moveTimer) * 8;
+    enemy.mesh.position.z = enemy.baseZ + Math.cos(enemy.moveTimer * 0.7) * 5;
+    enemy.mesh.position.y = 6 + Math.sin(enemy.moveTimer * 1.3) * 2;
+    // Face player roughly
+    enemy.mesh.lookAt(playerMesh.position);
+    enemy.mesh.rotation.x = 0;
+    
+    // Fire
+    if (now - enemy.lastFire > enemy.fireRate) {
+      enemy.lastFire = now;
+      fireEnemyBullet(enemy);
+    }
+  });
+
+  // ─ Update player bullets ─
+  for (let i = state.playerBullets.length - 1; i >= 0; i--) {
+    const b = state.playerBullets[i];
+    b.mesh.position.add(b.vel);
+    // Out of range
+    if (b.mesh.position.z < -80 || Math.abs(b.mesh.position.x) > 40) {
+      scene.remove(b.mesh);
+      state.playerBullets.splice(i, 1);
+      continue;
+    }
+    // Hit enemy
+    let hit = false;
+    state.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+      if (checkCollision(b.mesh.position, enemy.mesh.position, 2.5)) {
+        enemy.hp--;
+        hit = true;
+        if (enemy.hp <= 0) {
+          const exp = createExplosion(enemy.mesh.position.clone());
+          state.explosions.push(exp);
+          scene.remove(enemy.mesh);
+          state.score += 100;
+        }
+      }
+    });
+    if (hit) {
+      scene.remove(b.mesh);
+      state.playerBullets.splice(i, 1);
+      updateHUD();
+    }
+  }
+
+  // ─ Update enemy bullets ─
+  for (let i = state.enemyBullets.length - 1; i >= 0; i--) {
+    const b = state.enemyBullets[i];
+    b.mesh.position.add(b.vel);
+    if (b.mesh.position.z > 30 || Math.abs(b.mesh.position.x) > 40 || b.mesh.position.z < -80) {
+      scene.remove(b.mesh);
+      state.enemyBullets.splice(i, 1);
+      continue;
+    }
+    // Hit player
+    if (checkCollision(b.mesh.position, playerMesh.position, 1.8)) {
+      scene.remove(b.mesh);
+      state.enemyBullets.splice(i, 1);
+      state.hp--;
+      updateHUD();
+      if (state.hp <= 0) {
+        const exp = createExplosion(playerMesh.position.clone());
+        state.explosions.push(exp);
+        gameOver('Hit by enemy fire!');
+        return;
+      }
+    }
+  }
+
+  // ─ Collision with enemies ─
+  state.enemies.forEach(enemy => {
+    if (enemy.hp <= 0) return;
+    if (checkCollision(playerMesh.position, enemy.mesh.position, 3)) {
+      const exp = createExplosion(playerMesh.position.clone());
+      state.explosions.push(exp);
+      gameOver('Crashed into enemy!');
+    }
+  });
+
+  // ─ Stars ─
+  state.starItems.forEach(s => {
+    if (s.collected) return;
+    s.mesh.rotation.y += 0.03;
+    s.mesh.children[1].rotation.x += 0.05; // spin inner star
+    if (checkCollision(playerMesh.position, s.mesh.position, 2.5)) {
+      s.collected = true;
+      scene.remove(s.mesh);
+      state.stars++;
+      state.score += 50;
+      updateHUD();
+    }
+  });
+
+  // ─ Check all enemies dead → show goal ─
+  const aliveEnemies = state.enemies.filter(e => e.hp > 0).length;
+  if (aliveEnemies === 0 && !state.goalActive && state.goalPost) {
+    state.goalPost.visible = true;
+    state.goalActive = true;
+    updateHUD();
+  }
+
+  // ─ Goal reached ─
+  if (state.goalActive && state.goalPost) {
+    // Pulse the goal
+    state.goalPost.children.forEach(c => {
+      c.material && (c.material.emissive = new THREE.Color(0x224400));
+    });
+    if (checkCollision(playerMesh.position, state.goalPost.position, 6)) {
+      // Landing phase
+      state.landingPhase = true;
+      state.landingTimer = 0;
+      state.goalActive = false;
+    }
+  }
+
+  // ─ Landing animation ─
+  if (state.landingPhase) {
+    state.landingTimer++;
+    state.playerY -= 0.05;
+    playerMesh.position.y = state.playerY;
+    camera.position.y -= 0.03;
+    if (state.landingTimer > 80 || state.playerY < 0) {
+      state.playerY = 8;
+      camera.position.y = 18;
+      levelClear();
+    }
+  }
+
+  // ─ Ground collision ─
+  if (playerMesh.position.y < -1 && !state.landingPhase) {
+    gameOver('Crashed into the ground!');
+  }
+
+  // ─ Explosions ─
+  for (let i = state.explosions.length - 1; i >= 0; i--) {
+    const particles = state.explosions[i];
+    let allDead = true;
+    particles.forEach(p => {
+      p.life -= 0.02;
+      if (p.life > 0) {
+        allDead = false;
+        p.mesh.position.add(p.vel);
+        p.vel.y -= 0.005;
+        p.mesh.scale.setScalar(p.life);
+        p.mesh.material.opacity = p.life;
+        p.mesh.material.transparent = true;
+      } else {
+        scene.remove(p.mesh);
+      }
+    });
+    if (allDead) state.explosions.splice(i, 1);
+  }
+
+  // ─ Clouds drift ─
+  state.clouds.forEach(c => {
+    c.position.x += 0.01;
+    if (c.position.x > 35) c.position.x = -35;
+  });
+}
+
+// ─── Touch Controls ───
+document.addEventListener('touchstart', (e) => {
+  for (const touch of e.changedTouches) {
+    // Check if touching fire button area
+    const fbtn = document.getElementById('fire-btn');
+    const rect = fbtn.getBoundingClientRect();
+    if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+        touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+      state.isFiring = true;
+      continue;
+    }
+    state.touchStartX = touch.clientX;
+  }
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  for (const touch of e.changedTouches) {
+    if (state.touchStartX !== null) {
+      const dx = (touch.clientX - state.touchStartX) * 0.08;
+      state.playerTargetX += dx;
+      state.touchStartX = touch.clientX;
+    }
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', (e) => {
+  state.touchStartX = null;
+  state.isFiring = false;
+}, { passive: false });
+
+// ─── Mouse/Keyboard (desktop fallback) ───
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') state.playerTargetX -= 1.5;
+  if (e.key === 'ArrowRight' || e.key === 'd') state.playerTargetX += 1.5;
+  if (e.key === ' ') { state.isFiring = true; e.preventDefault(); }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key === ' ') state.isFiring = false;
+});
+
+// Mouse movement for desktop
+let mouseDown = false;
+renderer.domElement.addEventListener('mousedown', (e) => {
+  mouseDown = true;
+  state.touchStartX = e.clientX;
+});
+renderer.domElement.addEventListener('mousemove', (e) => {
+  if (mouseDown && state.touchStartX !== null) {
+    const dx = (e.clientX - state.touchStartX) * 0.08;
+    state.playerTargetX += dx;
+    state.touchStartX = e.clientX;
+  }
+});
+renderer.domElement.addEventListener('mouseup', () => {
+  mouseDown = false;
+  state.touchStartX = null;
+});
+
+// Fire button
+document.getElementById('fire-btn').addEventListener('mousedown', (e) => {
+  e.stopPropagation();
+  state.isFiring = true;
+});
+document.getElementById('fire-btn').addEventListener('mouseup', () => {
+  state.isFiring = false;
+});
+document.getElementById('fire-btn').addEventListener('touchstart', (e) => {
+  e.stopPropagation();
+  state.isFiring = true;
+});
+document.getElementById('fire-btn').addEventListener('touchend', (e) => {
+  e.stopPropagation();
+  state.isFiring = false;
+});
+
+// ─── UI Buttons ───
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('title-screen').style.display = 'none';
+  // Show intro
+  document.getElementById('intro-overlay').style.display = 'flex';
+  state.phase = 'intro';
+  setTimeout(() => {
+    document.getElementById('intro-overlay').style.display = 'none';
+    startLevel();
+  }, 3000);
+});
+
+document.getElementById('retry-btn').addEventListener('click', () => {
+  state.level = 1;
+  state.score = 0;
+  state.stars = 0;
+  state.bulletLevel = 1;
+  startLevel();
+});
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  state.level++;
+  state.bulletLevel++;
+  startLevel();
+});
+
+// ─── Resize ───
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ─── Init & Loop ───
+createGround();
+
+function animate() {
+  requestAnimationFrame(animate);
+  update();
+  renderer.render(scene, camera);
+}
+animate();
+
+</script>
+</body>
+</html>
