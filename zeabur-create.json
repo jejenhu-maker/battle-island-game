@@ -1,0 +1,1 @@
+{"query":"mutation { createService(projectID: \"69beacb91066986b9a16ad81\", template: GIT, name: \"battle-island-game\") { _id name } }"}

@@ -1,0 +1,1 @@
+{"query":"mutation { updateGitService(serviceID: \"69dd0a8170df6d442726ba8d\", gitProvider: GITHUB, repoOwner: \"jejenhu-maker\", repoName: \"battle-island-game\", branchName: \"master\") { _id } }"}

@@ -1,0 +1,1 @@
+{"query":"query { service(_id: \"69dd0a8170df6d442726ba8d\") { _id name template } }"}
