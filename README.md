@@ -6,13 +6,13 @@ A browser-based arcade flight game. Clear each coastal patrol by destroying ever
 
 | Action | Keyboard | Touch |
 | --- | --- | --- |
-| Steer | A / D or left / right arrows | Drag the joystick left / right |
+| Turn aircraft and camera | A / D or left / right arrows | Drag the joystick left / right |
 | Speed up / reverse | W / S or up / down arrows | Drag the joystick up / down |
-| Change altitude | E / Q | The aircraft maintains a safe height automatically |
+| Climb / dive | E / Q | Hold CLIMB / DIVE |
 | Fire | Space | Hold FIRE |
 | Pause | P or Escape | PAUSE |
 
-The wing guns automatically track and fire at nearby aircraft ahead. Holding FIRE also fires without a target. Move back to re-engage an enemy you have flown past. Retrying starts the current mission again with the score it had at the beginning of that mission.
+You can open **HOW TO FLY** from the title, pause screen, or in-game HUD. The HUD shows altitude and compass heading. Left and right rotate the plane; the camera follows its nose. The game keeps the plane above the terrain when diving. The wing guns automatically track and fire at nearby aircraft in front of you. Holding FIRE also fires without a target. Turn around or reverse to re-engage an enemy you have flown past. Retrying starts the current mission again with the score it had at the beginning of that mission.
 
 ## Run locally
 
