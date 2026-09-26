@@ -34,10 +34,15 @@
   .control { display: none; position: fixed; z-index: 12; touch-action: none; pointer-events: auto; }
   #joystick { bottom: max(28px, env(safe-area-inset-bottom)); left: max(24px, env(safe-area-inset-left)); width: 132px; height: 132px; border-radius: 50%; border: 1px solid rgba(255,255,255,.5); background: rgba(6,35,48,.35); box-shadow: inset 0 0 20px rgba(255,255,255,.09); }
   #joystick:before { content: ''; position: absolute; inset: 27px; border-radius: 50%; border: 1px dashed rgba(255,255,255,.3); }
+  #joystick:after { content: '↶ TURN ↷'; position: absolute; width: 100%; left: 0; bottom: -18px; color: #fff; font-size: 9px; font-weight: 800; letter-spacing: .13em; text-align: center; text-shadow: 0 1px 5px #123; }
   #stick { position: absolute; left: 40px; top: 40px; width: 52px; height: 52px; border-radius: 50%; background: rgba(234,252,244,.85); border: 3px solid white; box-shadow: 0 3px 16px rgba(0,10,20,.3); }
   #fire { bottom: max(51px, calc(env(safe-area-inset-bottom) + 23px)); right: max(35px, env(safe-area-inset-right)); width: 87px; height: 87px; border: 2px solid #ffecba; border-radius: 50%; background: linear-gradient(145deg,#f18b4e,#c64335); color: white; font-weight: 900; letter-spacing: .1em; box-shadow: 0 5px 0 #742d29, 0 8px 30px #fa7d3866; }
   #fire:active { transform: translateY(3px); box-shadow: 0 2px 0 #742d29; }
-  #pause { pointer-events: auto; border: 1px solid rgba(255,255,255,.5); border-radius: 9px; padding: 8px 11px; color: #fff; background: rgba(2,30,43,.55); font-size: 12px; font-weight: 800; }
+  #altitude-controls { bottom: max(154px, calc(env(safe-area-inset-bottom) + 126px)); right: max(32px, env(safe-area-inset-right)); flex-direction: column; gap: 9px; }
+  .altitude-btn { width: 94px; min-height: 45px; border: 1px solid rgba(255,255,255,.7); border-radius: 12px; background: rgba(5,50,64,.75); color: #fff; font-size: 12px; font-weight: 900; letter-spacing: .06em; touch-action: none; }
+  .altitude-btn:active { background: #377f85; transform: scale(.97); }
+  #pause, #hud-help { pointer-events: auto; border: 1px solid rgba(255,255,255,.5); border-radius: 9px; padding: 8px 11px; color: #fff; background: rgba(2,30,43,.55); font-size: 12px; font-weight: 800; }
+  .hud-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
   .screen { position: fixed; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; background: linear-gradient(160deg,rgba(2,29,47,.87),rgba(3,54,61,.74)); backdrop-filter: blur(7px); }
   #title-screen { display: flex; background: radial-gradient(ellipse at 50% 60%,rgba(7,93,91,.28),rgba(2,29,47,.88)); }
   .brand { font-size: 12px; letter-spacing: .36em; font-weight: 900; color: #b8f4d5; }
@@ -48,7 +53,13 @@
   .pill { border: 1px solid rgba(212,250,238,.5); border-radius: 999px; padding: 8px 16px; color: #d8f9e8; font-size: 11px; letter-spacing: .15em; font-weight: 800; }
   .primary { border: 0; border-radius: 999px; padding: 15px 38px; min-width: 190px; color: #173943; background: #ffdb9b; font-size: 14px; letter-spacing: .1em; font-weight: 900; box-shadow: 0 10px 30px #001e2e70; }
   .primary:hover { background: #ffedc6; }
+  .secondary { border: 1px solid #d7f2e7; border-radius: 999px; padding: 10px 25px; background: transparent; color: #f1fffa; font-size: 12px; font-weight: 800; letter-spacing: .08em; margin-top: 12px; }
+  #controls-screen { z-index: 30; background: rgba(2,31,45,.94); overflow-y: auto; }
+  .control-list { width: min(440px, 95vw); margin: 8px 0 18px; text-align: left; border-top: 1px solid #e7fcf366; }
+  .control-row { display: flex; justify-content: space-between; gap: 18px; padding: 9px 0; border-bottom: 1px solid #e7fcf344; font-size: 13px; }
+  .control-row span:last-child { color: #ffe4ad; text-align: right; }
   .instructions { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); padding: 0 16px; font-size: 11px; letter-spacing: .08em; color: #cbe6df; }
+  @media (pointer: coarse) { #help { display: none; } }
   @media (max-width: 600px) {
     .hud-panel { min-width: 120px; padding: 9px 10px; }
     .stat { font-size: 16px; }
@@ -56,6 +67,14 @@
     #status { top: 104px; }
     #toast { font-size: 17px; }
     .instructions { font-size: 10px; }
+    .hud-actions button { padding: 6px 7px !important; font-size: 10px !important; }
+  }
+  @media (max-height: 430px) {
+    #altitude-controls { bottom: max(83px, env(safe-area-inset-bottom)); right: 132px; }
+    .altitude-btn { min-height: 37px; }
+    #controls-screen h2 { font-size: 32px; }
+    .control-row { padding: 5px 0; }
+    #controls-screen { justify-content: flex-start; }
   }
 </style>
 </head>
@@ -73,14 +92,19 @@
       <div class="eyebrow">Coastal patrol</div>
       <div class="stat"><span id="hud-enemies">1</span> HOSTILES</div>
       <div class="substat">★ <span id="hud-stars">0</span> collected</div>
-      <button id="pause" type="button" aria-label="Pause game">Ⅱ PAUSE</button>
+      <div class="substat">ALT <span id="hud-altitude">8</span> · HDG <span id="hud-heading">000°</span></div>
+      <div class="hud-actions"><button id="hud-help" type="button">? HOW TO FLY</button><button id="pause" type="button" aria-label="Pause game">Ⅱ PAUSE</button></div>
     </div>
   </div>
   <div id="status">AUTO AIM ONLINE · FLY TOWARD THE ISLAND</div>
   <div id="reticle"></div><div id="aim-note"></div><div id="toast" role="status"></div>
-  <div id="help">WASD / ARROWS · STEER & THROTTLE &nbsp; • &nbsp; SPACE / TAP FIRE &nbsp; • &nbsp; Q / E ALTITUDE &nbsp; • &nbsp; P PAUSE</div>
+  <div id="help">A / D TURN · W / S SPEED / REVERSE · E CLIMB · Q DIVE · SPACE FIRE · P PAUSE</div>
 </div>
 <div id="joystick" class="control" aria-label="Flight joystick"><div id="stick"></div></div>
+<div id="altitude-controls" class="control">
+  <button id="climb" class="altitude-btn" type="button" aria-label="Climb">↑ CLIMB</button>
+  <button id="dive" class="altitude-btn" type="button" aria-label="Descend">↓ DIVE</button>
+</div>
 <button id="fire" class="control" type="button" aria-label="Fire weapon">FIRE</button>
 <section id="title-screen" class="screen">
   <div class="brand">COASTAL SKIES / FLIGHT 01</div>
@@ -88,9 +112,21 @@
   <div class="pill">ARCADE AIR COMBAT</div>
   <p>Fly the coastline, bring down the hostile aircraft and collect supply stars. Your guns track nearby targets automatically.</p>
   <button class="primary" id="start-btn" type="button">TAKE FLIGHT →</button>
-  <div class="instructions">STEER WITH WASD / ARROWS OR THE TOUCH JOYSTICK · FIRE WITH SPACE OR THE FIRE BUTTON</div>
+  <button class="secondary" id="title-help" type="button">HOW TO FLY</button>
+  <div class="instructions">JOYSTICK LEFT/RIGHT TURNS · UP/DOWN CHANGES SPEED · USE CLIMB / DIVE FOR ALTITUDE</div>
 </section>
-<section id="pause-screen" class="screen"><div class="brand">FLIGHT ON HOLD</div><h2>PAUSED</h2><p>Take a breath. Your mission is waiting.</p><button class="primary" id="resume-btn" type="button">RESUME FLIGHT →</button></section>
+<section id="pause-screen" class="screen"><div class="brand">FLIGHT ON HOLD</div><h2>PAUSED</h2><p>Take a breath. Your mission is waiting.</p><button class="primary" id="resume-btn" type="button">RESUME FLIGHT →</button><button class="secondary" id="pause-help" type="button">HOW TO FLY</button></section>
+<section id="controls-screen" class="screen">
+  <div class="brand">FLIGHT MANUAL</div><h2>HOW TO FLY</h2>
+  <div class="control-list">
+    <div class="control-row"><span>Turn the plane and view</span><span>A / D · ← / → · joystick left/right</span></div>
+    <div class="control-row"><span>Speed up / reverse</span><span>W / S · ↑ / ↓ · joystick up/down</span></div>
+    <div class="control-row"><span>Climb / dive</span><span>E / Q · ↑ CLIMB / ↓ DIVE buttons</span></div>
+    <div class="control-row"><span>Fire / pause</span><span>Space / P · FIRE / PAUSE buttons</span></div>
+  </div>
+  <p>Hold a direction to turn. The camera follows your heading. Altitude stops at a safe height above the island.</p>
+  <button class="primary" id="close-help" type="button">GOT IT →</button>
+</section>
 <section id="game-over-screen" class="screen"><div class="brand">MISSION INTERRUPTED</div><h2>AIRCRAFT LOST</h2><p id="go-reason"></p><button class="primary" id="retry-btn" type="button">RETRY MISSION →</button></section>
 <section id="level-clear-screen" class="screen"><div class="brand">MISSION COMPLETE</div><h2>SKIES CLEARED</h2><p id="clear-info"></p><button class="primary" id="next-btn" type="button">NEXT MISSION →</button></section>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js"}}</script>
@@ -103,7 +139,7 @@ const lerp = THREE.MathUtils.lerp;
 const state = {
   phase: 'title', level: 1, score: 0, stars: 0, startScore: 0, startStars: 0,
   hp: 5, maxHp: 5, player: null, enemies: [], bullets: [], pickups: [], effects: [],
-  keys: {}, joystick: { x: 0, y: 0 }, firing: false, lastShot: 0,
+  keys: {}, joystick: { x: 0, y: 0 }, climb: false, dive: false, heading: 0, firing: false, lastShot: 0,
   invulnerable: 0, clearTimer: 0, elapsed: 0, shotLevel: 1
 };
 let seed = 70429;
@@ -388,10 +424,16 @@ function updateHUD() {
   $('hud-hp').textContent = state.hp + '/' + state.maxHp;
   $('health-fill').style.width = (100 * state.hp / state.maxHp) + '%';
   $('health-fill').style.background = state.hp <= 2 ? '#ff9274' : 'linear-gradient(90deg,#41e2aa,#baffb7)';
+  updateFlightHUD();
+}
+function updateFlightHUD() {
+  $('hud-altitude').textContent = state.player ? Math.round(state.player.position.y) : '8';
+  $('hud-heading').textContent = String(Math.round(THREE.MathUtils.euclideanModulo(state.heading * 180 / Math.PI, 360)) % 360).padStart(3, '0') + '°';
 }
 function showControls(visible) {
   $('hud').style.display = visible ? 'block' : 'none';
   $('joystick').style.display = visible ? 'block' : 'none';
+  $('altitude-controls').style.display = visible ? 'flex' : 'none';
   $('fire').style.display = visible ? 'block' : 'none';
 }
 function startLevel(retry = false) {
@@ -408,13 +450,15 @@ function startLevel(retry = false) {
   state.clearTimer = 0;
   state.lastShot = 0;
   state.firing = false;
+  state.climb = state.dive = false;
+  state.heading = 0;
   state.keys = {};
   state.joystick.x = 0; state.joystick.y = 0;
   $('stick').style.transform = '';
   spawnEnemies(); spawnPickups();
   camera.position.set(0, 13, 32);
   camera.lookAt(0, 8, -24);
-  ['title-screen','pause-screen','game-over-screen','level-clear-screen'].forEach(id => $(id).style.display = 'none');
+  ['title-screen','pause-screen','game-over-screen','level-clear-screen','controls-screen'].forEach(id => $(id).style.display = 'none');
   state.phase = 'playing';
   showControls(true);
   updateHUD();
@@ -427,8 +471,10 @@ function closestTarget() {
     if (e.hp <= 0) continue;
     const dx = e.mesh.position.x - state.player.position.x;
     const dz = e.mesh.position.z - state.player.position.z;
+    const ahead = dx * Math.sin(state.heading) - dz * Math.cos(state.heading);
+    const lateral = dx * Math.cos(state.heading) + dz * Math.sin(state.heading);
     const distance = state.player.position.distanceTo(e.mesh.position);
-    if (dz < -3 && Math.abs(dx) < 27 && distance < nearest) { target = e; nearest = distance; }
+    if (ahead > 3 && Math.abs(lateral) < 27 && distance < nearest) { target = e; nearest = distance; }
   }
   return target;
 }
@@ -440,10 +486,13 @@ function shootPlayer(force = false) {
   state.lastShot = state.elapsed;
   const origin = state.player.position;
   const muzzles = state.shotLevel > 1 ? [-1, 0, 1] : [-1, 1];
+  const forward = new THREE.Vector3(Math.sin(state.heading), 0, -Math.cos(state.heading));
+  const right = new THREE.Vector3(Math.cos(state.heading), 0, Math.sin(state.heading));
   for (const side of muzzles) {
-    const b = mesh(bulletGeo, mats.bolt, scene, origin.x + side * 1.8, origin.y -.1, origin.z - 1);
+    const muzzle = origin.clone().addScaledVector(right, side * 1.8).addScaledVector(forward, 1);
+    const b = mesh(bulletGeo, mats.bolt, scene, muzzle.x, muzzle.y -.1, muzzle.z);
     b.scale.set(.72, .72, 2.5);
-    const aim = target ? target.mesh.position.clone().add(new THREE.Vector3(0, 0, -.4)) : origin.clone().add(new THREE.Vector3(side * .3, 0, -30));
+    const aim = target ? target.mesh.position.clone() : origin.clone().addScaledVector(forward, 30);
     const velocity = aim.sub(b.position).normalize().multiplyScalar(51);
     state.bullets.push({ mesh: b, velocity, target, hostile: false, life: 2.1 });
   }
@@ -491,9 +540,32 @@ function completeLevel() {
 function pause() {
   if (state.phase === 'playing') {
     state.phase = 'paused'; state.firing = false;
+    state.climb = state.dive = false;
+    state.keys = {};
+    state.joystick.x = state.joystick.y = 0;
+    $('stick').style.transform = '';
     showControls(false); $('pause-screen').style.display = 'flex';
   } else if (state.phase === 'paused') {
     state.phase = 'playing'; showControls(true); $('pause-screen').style.display = 'none';
+  }
+}
+let helpReturnPhase = 'title';
+function openHelp() {
+  helpReturnPhase = state.phase;
+  if (state.phase === 'playing') {
+    state.phase = 'help'; state.firing = state.climb = state.dive = false;
+    state.keys = {};
+    state.joystick.x = state.joystick.y = 0;
+    $('stick').style.transform = '';
+    showControls(false);
+  }
+  $('controls-screen').style.display = 'flex';
+}
+function closeHelp() {
+  $('controls-screen').style.display = 'none';
+  if (helpReturnPhase === 'playing') {
+    state.phase = 'playing';
+    showControls(true);
   }
 }
 const temp = new THREE.Vector3();
@@ -518,25 +590,30 @@ function update(dt) {
 
   const p = state.player;
   const joy = state.joystick;
-  const horizontal = clamp(joy.x + (state.keys.ArrowRight || state.keys.d ? 1 : 0) - (state.keys.ArrowLeft || state.keys.a ? 1 : 0), -1, 1);
+  const turn = clamp(joy.x + (state.keys.ArrowRight || state.keys.d ? 1 : 0) - (state.keys.ArrowLeft || state.keys.a ? 1 : 0), -1, 1);
   const throttle = clamp(-joy.y + (state.keys.ArrowUp || state.keys.w ? 1 : 0) - (state.keys.ArrowDown || state.keys.s ? 1 : 0), -1, 1);
-  const altitude = (state.keys.e ? 1 : 0) - (state.keys.q ? 1 : 0);
+  const altitude = (state.keys.e || state.climb ? 1 : 0) - (state.keys.q || state.dive ? 1 : 0);
+  state.heading = THREE.MathUtils.euclideanModulo(state.heading + turn * dt * 1.5 + Math.PI, Math.PI * 2) - Math.PI;
   const speed = throttle > 0 ? 6.5 + throttle * 9 : 6.5 + throttle * 11.5;
-  const desired = temp.set(horizontal * 12, altitude * 7, -speed);
+  const forwardX = Math.sin(state.heading), forwardZ = -Math.cos(state.heading);
+  const desired = temp.set(forwardX * speed, altitude * 8, forwardZ * speed);
   p.userData.velocity.lerp(desired, 1 - Math.exp(-dt * 4.2));
   p.position.addScaledVector(p.userData.velocity, dt);
-  p.position.x = clamp(p.position.x, -24, 24);
-  p.position.z = clamp(p.position.z, -146, 20);
-  p.position.y = clamp(p.position.y, Math.max(5.3, heightAt(p.position.x, p.position.z) + 3.7), 20);
-  p.rotation.z = lerp(p.rotation.z, -horizontal * .35, 1 - Math.exp(-dt * 5));
+  p.position.x = clamp(p.position.x, -85, 85);
+  p.position.z = clamp(p.position.z, -168, 48);
+  p.position.y = clamp(p.position.y, Math.max(5.3, heightAt(p.position.x, p.position.z) + 3.7), 28);
+  p.rotation.y = -state.heading;
+  p.rotation.z = lerp(p.rotation.z, -turn * .42, 1 - Math.exp(-dt * 5));
   p.rotation.x = lerp(p.rotation.x, throttle * -.09 + altitude * .17, 1 - Math.exp(-dt * 4));
   p.userData.propeller.rotation.z += dt * 33;
+  updateFlightHUD();
   state.invulnerable = Math.max(0, state.invulnerable - dt);
   p.visible = state.invulnerable <= 0 || Math.floor(state.elapsed * 12) % 2 === 0;
-  // Keep the aircraft in the lower half of the view, with the coastline and approaching targets in sight.
-  const cameraGoal = temp.set(p.position.x * .72, p.position.y + 6.5, p.position.z + 15.5);
+  // Follow the aircraft's heading so a turn changes the view and flight path together.
+  const cameraGoal = temp.set(p.position.x - forwardX * 15.5, p.position.y + 6.5, p.position.z - forwardZ * 15.5);
   camera.position.lerp(cameraGoal, 1 - Math.exp(-dt * 3));
-  camera.lookAt(p.position.x * .78, p.position.y + 1, p.position.z - 22);
+  camera.lookAt(p.position.x + forwardX * 22, p.position.y + 1, p.position.z + forwardZ * 22);
+  camera.rotateZ(-turn * .018);
   camera.fov = lerp(camera.fov, 64 + Math.max(0, throttle) * 4, 1 - Math.exp(-dt * 2.8));
   camera.updateProjectionMatrix();
 
@@ -556,8 +633,17 @@ function update(dt) {
     if (enemy.mesh.position.distanceTo(p.position) < 2.5) damage('You collided with an enemy aircraft.');
   }
   const target = closestTarget();
-  const passedEnemies = state.enemies.some(e => e.hp > 0 && e.mesh.position.z > p.position.z + 3);
-  $('status').textContent = state.clearTimer > 0 ? 'SKIES CLEAR · RETURNING TO BASE' : target ? 'TARGET LOCKED · AUTO FIRE ACTIVE' : passedEnemies ? 'HOSTILES BEHIND · PULL BACK TO RE-ENGAGE' : 'PATROL THE COAST · ENEMIES AHEAD';
+  let guidance = 'PATROL THE COAST';
+  const nearestEnemy = state.enemies.filter(e => e.hp > 0).sort((a, b) =>
+    a.mesh.position.distanceToSquared(p.position) - b.mesh.position.distanceToSquared(p.position))[0];
+  if (nearestEnemy) {
+    const dx = nearestEnemy.mesh.position.x - p.position.x;
+    const dz = nearestEnemy.mesh.position.z - p.position.z;
+    const bearing = Math.atan2(dx, -dz);
+    const angle = Math.atan2(Math.sin(bearing - state.heading), Math.cos(bearing - state.heading));
+    guidance = angle < -.25 ? '↶ TURN LEFT TOWARD HOSTILES' : angle > .25 ? 'TURN RIGHT TOWARD HOSTILES ↷' : 'HOSTILES AHEAD · FLY FORWARD';
+  }
+  $('status').textContent = state.clearTimer > 0 ? 'SKIES CLEAR · RETURNING TO BASE' : target ? 'TARGET LOCKED · AUTO FIRE ACTIVE' : guidance;
   if (target) {
     const screen = target.mesh.position.clone().project(camera);
     const onScreen = screen.z > -1 && screen.z < 1 && Math.abs(screen.x) < .88 && Math.abs(screen.y) < .8;
@@ -655,16 +741,34 @@ joystick.addEventListener('pointerup', resetStick);
 joystick.addEventListener('pointercancel', resetStick);
 $('fire').addEventListener('pointerdown', event => { event.preventDefault(); $('fire').setPointerCapture(event.pointerId); state.firing = true; });
 ['pointerup','pointercancel','lostpointercapture'].forEach(type => $('fire').addEventListener(type, () => state.firing = false));
-window.addEventListener('blur', () => { state.keys = {}; state.firing = false; if (state.phase === 'playing') pause(); });
+for (const [id, key] of [['climb', 'climb'], ['dive', 'dive']]) {
+  const button = $(id);
+  button.addEventListener('pointerdown', event => {
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    state[key] = true;
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type =>
+    button.addEventListener(type, () => { state[key] = false; })
+  );
+}
+window.addEventListener('blur', () => { state.keys = {}; state.firing = state.climb = state.dive = false; if (state.phase === 'playing') pause(); });
 document.addEventListener('keydown', event => {
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(key)) event.preventDefault();
-  if ((key === 'p' || key === 'Escape') && !event.repeat) pause();
+  if ((key === 'p' || key === 'Escape') && !event.repeat) {
+    if ($('controls-screen').style.display === 'flex') closeHelp();
+    else pause();
+  }
   state.keys[key] = true;
 });
 document.addEventListener('keyup', event => { state.keys[event.key.length === 1 ? event.key.toLowerCase() : event.key] = false; });
 $('pause').addEventListener('click', pause);
 $('resume-btn').addEventListener('click', pause);
+$('hud-help').addEventListener('click', openHelp);
+$('title-help').addEventListener('click', openHelp);
+$('pause-help').addEventListener('click', openHelp);
+$('close-help').addEventListener('click', closeHelp);
 $('start-btn').addEventListener('click', () => startLevel());
 $('retry-btn').addEventListener('click', () => startLevel(true));
 $('next-btn').addEventListener('click', () => { state.level++; state.shotLevel++; startLevel(); });
