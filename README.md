@@ -16,6 +16,6 @@ You can open **HOW TO FLY** from the title, pause screen, or in-game HUD. The HU
 
 ## Run locally
 
-Requires Node.js 20. Run npm ci, then npm start and open http://localhost:3100. The scene uses Three.js from the jsDelivr CDN, so the browser needs internet access on its first load.
+Requires Node.js 24.x. Run npm ci, then npm start and open http://localhost:3100. The scene uses Three.js from the jsDelivr CDN, so the browser needs internet access on its first load.
 
 The terrain, waves, island scenery, aircraft and effects are created in JavaScript; the project does not require image assets.
